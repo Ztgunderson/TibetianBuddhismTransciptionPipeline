@@ -1,0 +1,19 @@
+{
+  "experiment_id": "smoke",
+  "seed": 0,
+  "_comment": "Loop 0 gate: 10 utterances per corpus, all six Engine-A variants. Proves the harness end-to-end before the full grid. Scaling to Loop 1 is editing 'minutes' and adding cells — no code change. Fill model_path with the outputs of models/build.sh.",
+  "corpora": {
+    "fleurs":      {"max_utterances": 10},
+    "nict_tib1":   {"max_utterances": 10, "stratify_by": "speaker_id"},
+    "vaksancayah": {"max_utterances": 10}
+  },
+  "cells": [
+    {"engine": "ggml", "model": "whisper-large-v3", "quant": "fp16", "model_path": "models/ggml/large-v3-fp16.bin"},
+    {"engine": "ggml", "model": "whisper-large-v3", "quant": "q8_0", "model_path": "models/ggml/large-v3-q8_0.bin"},
+    {"engine": "ggml", "model": "whisper-large-v3", "quant": "q4_0", "model_path": "models/ggml/large-v3-q4_0.bin"},
+    {"engine": "ggml", "model": "whisper-small",    "quant": "fp16", "model_path": "models/ggml/small-fp16.bin"},
+    {"engine": "ggml", "model": "whisper-small",    "quant": "q8_0", "model_path": "models/ggml/small-q8_0.bin"},
+    {"engine": "ggml", "model": "whisper-small",    "quant": "q4_0", "model_path": "models/ggml/small-q4_0.bin"}
+  ],
+  "cell_corpora": {}
+}

@@ -1,0 +1,13 @@
+# Harness dependencies (Loop 0-2). GPU model runtimes live in the jetson-containers, not here.
+# Host Python is CPU-only on this Orin, so this file is only the orchestration/analysis layer.
+pydantic>=2.0,<3.0
+
+# Analysis / figures (Loop 1+). matplotlib styled per docs/design_spec.md.
+matplotlib>=3.7
+numpy>=1.24
+
+# Corpus acquisition (FLEURS via HuggingFace). Optional; other corpora are direct downloads.
+# datasets>=2.14      # uncomment when pulling FLEURS through the HF hub
+
+# Engine B (CTranslate2/INT8) — installed inside the jetson-container only, when Loop 1 is done.
+# faster-whisper>=1.0
