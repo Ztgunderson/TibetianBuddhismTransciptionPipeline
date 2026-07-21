@@ -67,21 +67,45 @@ class Estimate:
         return f"{self.point:.4f} [{self.lo:.4f}, {self.hi:.4f}] (n={self.n})"
 
 
-def _corpus_error(pairs: list[tuple[str, str, str]]) -> float:
-    """Aggregate error rate = total edits / total reference tokens across utterances.
+# --- performance note -------------------------------------------------------------------
+# The bootstrap must NOT recompute edit distance on every resample: at 10k resamples over
+# hundreds of utterances that is millions of Levenshtein calls. Instead we compute each
+# utterance's (edits, ref_len) ONCE, then resample over those cached integer pairs and sum.
+# The micro-average = sum(edits)/sum(ref_len) is identical to the naive version, just fast.
+Counts = list[tuple[int, int]]  # per-utterance (edits, ref_len)
 
-    This is the corpus-level micro-average (the standard WER/CER definition), not the mean of
-    per-utterance rates — short utterances don't get outsized weight.
-    """
-    total_edits = 0
-    total_ref = 0
+
+def _edit_counts(pairs: list[tuple[str, str, str]]) -> Counts:
+    """Per-utterance (edits, ref_len) after normalization — computed once, reused by every resample."""
+    counts: Counts = []
     for hyp, ref, lang in pairs:
         unit = "word" if lang == "en" else "char"
         h = _tokens(normalize(hyp, lang), unit)
         r = _tokens(normalize(ref, lang), unit)
-        total_edits += _levenshtein(h, r)
-        total_ref += len(r)
+        counts.append((_levenshtein(h, r), len(r)))
+    return counts
+
+
+def _micro(counts: Counts) -> float:
+    """Corpus micro-average error = total edits / total reference tokens."""
+    total_edits = sum(c[0] for c in counts)
+    total_ref = sum(c[1] for c in counts)
     return total_edits / total_ref if total_ref else 0.0
+
+
+def _corpus_error(pairs: list[tuple[str, str, str]]) -> float:
+    """Aggregate error rate = total edits / total reference tokens across utterances.
+
+    Corpus-level micro-average (the standard WER/CER definition), not the mean of per-utterance
+    rates — short utterances don't get outsized weight. Kept as a convenience wrapper.
+    """
+    return _micro(_edit_counts(pairs))
+
+
+def _percentile_ci(stats: list[float], ci: float) -> tuple[float, float]:
+    stats.sort()
+    n = len(stats)
+    return stats[int((1 - ci) / 2 * n)], stats[int((1 + ci) / 2 * n) - 1]
 
 
 def bootstrap_error_rate(
@@ -92,22 +116,26 @@ def bootstrap_error_rate(
 ) -> Estimate:
     """Corpus error rate with a bootstrap CI, resampling over utterances.
 
-    `pairs` is a list of (hypothesis, reference, lang). Returns the point estimate on the
-    full set plus percentile CI bounds from `n_resamples` resamples-with-replacement.
+    `pairs` is a list of (hypothesis, reference, lang). Edit counts are precomputed once; each
+    resample sums cached integer pairs, so 10k resamples on a real corpus run in well under a
+    second.
     """
     if not pairs:
         return Estimate(0.0, 0.0, 0.0, 0)
-    point = _corpus_error(pairs)
+    counts = _edit_counts(pairs)
+    point = _micro(counts)
     rng = random.Random(seed)
-    n = len(pairs)
+    n = len(counts)
     stats = []
     for _ in range(n_resamples):
-        sample = [pairs[rng.randrange(n)] for _ in range(n)]
-        stats.append(_corpus_error(sample))
-    stats.sort()
-    lo_idx = int((1 - ci) / 2 * n_resamples)
-    hi_idx = int((1 + ci) / 2 * n_resamples) - 1
-    return Estimate(point, stats[lo_idx], stats[hi_idx], n)
+        te = tr = 0
+        for _ in range(n):
+            e, r = counts[rng.randrange(n)]
+            te += e
+            tr += r
+        stats.append(te / tr if tr else 0.0)
+    lo, hi = _percentile_ci(stats, ci)
+    return Estimate(point, lo, hi, n)
 
 
 def bootstrap_difference(
@@ -119,21 +147,28 @@ def bootstrap_difference(
 ) -> Estimate:
     """CI on the difference in corpus error rate (a - b), resampling each set independently.
 
-    This is the core Loop 1 statistic: e.g. a = Tibetan (Q4_0 minus FP16) degradation, b =
-    English degradation. If the returned interval excludes zero, the interaction is supported.
-    Caller passes already-differenced inputs, or uses this directly on two cells.
+    The core Loop 1 statistic: e.g. a = Tibetan (Q4_0 minus FP16) degradation, b = English
+    degradation. If the returned interval excludes zero, the interaction is supported. Edit
+    counts are precomputed once per set.
     """
     if not pairs_a or not pairs_b:
         return Estimate(0.0, 0.0, 0.0, 0)
-    point = _corpus_error(pairs_a) - _corpus_error(pairs_b)
+    ca, cb = _edit_counts(pairs_a), _edit_counts(pairs_b)
+    point = _micro(ca) - _micro(cb)
     rng = random.Random(seed)
-    na, nb = len(pairs_a), len(pairs_b)
+    na, nb = len(ca), len(cb)
     stats = []
     for _ in range(n_resamples):
-        sa = [pairs_a[rng.randrange(na)] for _ in range(na)]
-        sb = [pairs_b[rng.randrange(nb)] for _ in range(nb)]
-        stats.append(_corpus_error(sa) - _corpus_error(sb))
-    stats.sort()
-    lo_idx = int((1 - ci) / 2 * n_resamples)
-    hi_idx = int((1 + ci) / 2 * n_resamples) - 1
-    return Estimate(point, stats[lo_idx], stats[hi_idx], min(na, nb))
+        tea = tra = 0
+        for _ in range(na):
+            e, r = ca[rng.randrange(na)]
+            tea += e
+            tra += r
+        teb = trb = 0
+        for _ in range(nb):
+            e, r = cb[rng.randrange(nb)]
+            teb += e
+            trb += r
+        stats.append((tea / tra if tra else 0.0) - (teb / trb if trb else 0.0))
+    lo, hi = _percentile_ci(stats, ci)
+    return Estimate(point, lo, hi, min(na, nb))

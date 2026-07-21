@@ -44,6 +44,23 @@ Alternatives: absolute only, or relative only.
 
 ---
 
+## Decision D — H2 (Loop 2, the stretch / the "fix")
+
+H2 doesn't need a wording choice the way H1 does, but decide **now** whether it's on the poster
+or held for a follow-up post, because it changes what you build after Loop 1.
+
+> **H2.** Part of the quantization tax is a *calibration-data artifact*, not inherent to 4 bits:
+> quantization calibrated on Tibetan audio (ggml imatrix; and/or CTranslate2 INT8 calibration
+> cache) recovers a significant fraction of the Q4_0 loss at identical bits per weight.
+
+- **Falsifier:** Tibetan-calibrated quant does *not* beat generic quant on Tibetan CER (CI
+  includes 0), or it only does so by wrecking English (a trade, not a fix — which is still a
+  reportable finding, just a different one).
+- **Poster stance to pick:** (a) H1 only, H2 teased as "next"; or (b) H1 + a small H2 panel if
+  Loop 2 lands in time. The poster stands on H1 alone either way.
+- Detail: `docs/loop2_language_aware.md`. Claim discipline: language-aware quant improves the
+  model's fit to the language's *acoustic/orthographic context* — never "understanding."
+
 ## State of the build (all committed)
 
 - ✅ Loop 0 harness complete and self-verifying — `python3 -m bench.test_harness` passes
@@ -51,7 +68,10 @@ Alternatives: absolute only, or relative only.
 - ✅ Docs restructured into the loop program; README rewritten; `docs/` now public.
 - ✅ Prereg draft + paper scaffold (`paper/paper.md`, `paper/outline.md`, one-source/many-renders).
 - ✅ Two mechanism probes run and written up as findings.
-- ⬜ **Blocked on you:** freeze the prereg (Decisions A/B/C).
+- ✅ Analysis path (`bench/analyze.py`) built + validated on synthetic data: reproduces the
+  predicted ordering (bo > sa > en, CIs excluding 0). Poster figures render as pure-Python SVG
+  (no matplotlib on host) — renderer is the next code step.
+- ⬜ **Blocked on you:** freeze the prereg (Decisions A/B/C for H1, D for H2).
 - ⬜ **Blocked on GPU/downloads (next physical step):** `bash models/build.sh` inside a
   jetson-container to build the FP16/Q8_0/Q4_0 ladder, download corpora, then
   `python3 -m bench.runner configs/smoke.json` for the Loop 0 gate.
