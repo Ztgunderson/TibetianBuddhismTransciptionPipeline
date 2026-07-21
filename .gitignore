@@ -1,5 +1,5 @@
-# Project docs (planning notes, phase write-ups — keep local)
-docs/
+# docs/ is published: it is the methodology + reproduction guide for a public, citable repo.
+# (If you want any doc kept local, list that specific file here instead of the whole dir.)
 
 # Data — never commit audio, datasets, or model weights
 data/
