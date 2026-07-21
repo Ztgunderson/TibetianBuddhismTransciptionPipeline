@@ -1,0 +1,65 @@
+# Project docs (planning notes, phase write-ups — keep local)
+docs/
+
+# Data — never commit audio, datasets, or model weights
+data/
+*.wav
+*.mp3
+*.mp4
+*.flac
+*.ogg
+*.m4a
+*.opus
+*.bin
+*.pt
+*.pth
+*.gguf
+*.onnx
+*.safetensors
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+ENV/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Environment / secrets
+.env
+.env.*
+*.key
+*.pem
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Experiment outputs / logs
+runs/
+logs/
+*.log
+outputs/
+results/
+wandb/
+mlruns/
+
+# HuggingFace cache (if symlinked into project)
+.cache/
