@@ -214,3 +214,22 @@ degradation + min-max gap covers Phase 1 (H1/H2) solidly. Everything above marke
 - Report **effect size and per-clip consistency** over p-values.
 - State exact sample size and the reason for it plainly in methods — no implying more
   statistical power than the data supports.
+
+## Deviation log
+
+Changes made after the 2026-07-22 freeze, logged (not silently edited). No H1/H2/H3
+results had been seen at the time of any entry below.
+
+- **2026-07-22 — Chant segments excluded from Phase 3 pairing.** Chant/liturgical
+  recitation is a structurally different acoustic signal from conversational speech
+  (melisma — one syllable across many sustained pitches; intercalation — non-lexical
+  filler syllables), carrying much lower semantic density per second. It is therefore
+  excluded from the direct before/after translation pairing (Phase 3 / Loop 6) and held
+  as a separate flagged category; forcing a translation-pair mapping onto chant would
+  produce a meaningless "mistranslation" score that measures the mismatch in what chant
+  *is*, not translation error. This affects only Phase 3, which is already out of the
+  Aug 10 poster scope, so it changes no H1/H2/H3 outcome variable or falsifier. Related
+  segmentation design (a 3-state chant/talk pre-classification pass ahead of language-ID)
+  is tracked in local working notes, not in this frozen document. Parked for future work
+  (not this cycle): chant as a third quantization condition — whether quantization
+  degrades already-broken chant transcription further or hits a floor effect.
